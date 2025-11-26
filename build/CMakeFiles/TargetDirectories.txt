@@ -1,0 +1,3 @@
+/home/thiagoc/Code/CAD_CompactStringCompSnort/build/CMakeFiles/aho_corasick.dir
+/home/thiagoc/Code/CAD_CompactStringCompSnort/build/CMakeFiles/edit_cache.dir
+/home/thiagoc/Code/CAD_CompactStringCompSnort/build/CMakeFiles/rebuild_cache.dir

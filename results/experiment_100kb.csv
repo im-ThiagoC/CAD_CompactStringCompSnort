@@ -1,0 +1,4 @@
+Method,Time(ms),Speedup,Throughput(Mcps),Matches
+Serial_CPU,0.72,1.00,142.50,865
+GPU_Global,0.30,2.37,339.83,861
+GPU_Shared_Compact,0.15,4.65,662.86,0

@@ -1,0 +1,82 @@
+# Padrões para detecção de intrusões (IDS)
+# Baseado em assinaturas do Snort
+# Padrões do exemplo do artigo
+he
+she
+his
+hers
+ushers
+# Comandos maliciosos
+cmd.exe
+powershell.exe
+/bin/sh
+/bin/bash
+wget
+curl
+nc.exe
+netcat
+# SQL Injection
+union select
+1=1
+or 1=1
+drop table
+exec(
+execute(
+insert into
+delete from
+# Cross-Site Scripting (XSS)
+<script>
+javascript:
+onerror=
+onload=
+alert(
+document.cookie
+eval(
+innerHTML
+# Path Traversal
+../../../../
+..\..\..\..\
+etc/passwd
+windows/system32
+# Command Injection
+shell_exec
+system(
+passthru(
+popen(
+proc_open
+# Malware Signatures
+trojan
+backdoor
+rootkit
+keylogger
+ransomware
+cryptolocker
+wannacry
+petya
+# Network Attacks
+syn flood
+ddos
+ping -f
+nmap
+portscan
+brutefore
+# File Upload Attacks
+.php
+.jsp
+.asp
+.exe
+.bat
+.sh
+# HTTP Attacks
+POST /admin
+GET /phpmyadmin
+User-Agent: sqlmap
+nikto
+burpsuite
+# Additional patterns
+password
+admin
+root
+exploit
+vulnerability
+0day

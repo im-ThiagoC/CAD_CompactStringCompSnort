@@ -1,0 +1,1 @@
+  -L"/usr/lib/gcc/x86_64-linux-gnu/13"  "/usr/lib/x86_64-linux-gnu/libcudart.so" "/usr/lib/x86_64-linux-gnu/libcuda.so" -lcudadevrt -lcudart_static -lrt -lpthread -ldl 
