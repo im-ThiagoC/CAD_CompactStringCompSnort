@@ -1,6 +1,13 @@
 #!/bin/bash
-# Script para executar todos os experimentos e gerar gráficos
+# =============================================================================
+# Script para executar experimentos de escalabilidade do Aho-Corasick GPU
+# 
+# Autor: Thiago Carvalho
+# Data: 27/11/2025
+# Curso: TN741 - Computação de Alto Desempenho - UFRRJ
+#
 # Uso: ./run_experiments.sh
+# =============================================================================
 
 echo "╔════════════════════════════════════════════════════════════╗"
 echo "║  Executando Experimentos de Escalabilidade (5 iterações)  ║"

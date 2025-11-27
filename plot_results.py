@@ -1,7 +1,12 @@
 #!/usr/bin/env python3
 """
-Gera gráficos de desempenho do algoritmo Aho-Corasick
-Compara aceleração esperada vs alcançada
+Gera gráficos de desempenho do algoritmo Aho-Corasick GPU
+
+Compara versões de memória global vs compartilhada.
+
+Autor: Thiago Carvalho
+Data: 27/11/2025
+Curso: TN741 - Computação de Alto Desempenho - UFRRJ
 """
 
 import pandas as pd

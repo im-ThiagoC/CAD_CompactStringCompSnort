@@ -1,3 +1,14 @@
+/**
+ * @file utils.h
+ * @brief Interface das funções utilitárias
+ * 
+ * Declara funções para geração de dados, verificação CUDA e métricas.
+ * 
+ * @author Thiago Carvalho
+ * @date 27/11/2025
+ * @course TN741 - Computação de Alto Desempenho - UFRRJ
+ */
+
 #ifndef UTILS_H
 #define UTILS_H
 

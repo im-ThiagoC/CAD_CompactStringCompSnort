@@ -1,3 +1,11 @@
+# =============================================================================
+# CMakeLists.txt - Compactação do Algoritmo de Comparação de Strings do Snort
+# 
+# Autor: Thiago Carvalho
+# Data: 27/11/2025
+# Curso: TN741 - Computação de Alto Desempenho - UFRRJ
+# =============================================================================
+
 cmake_minimum_required(VERSION 3.18)
 
 project(AhoCorasickCUDA VERSION 1.0 LANGUAGES C CUDA)

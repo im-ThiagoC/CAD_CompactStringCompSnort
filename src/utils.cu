@@ -1,3 +1,15 @@
+/**
+ * @file utils.cu
+ * @brief Funções utilitárias para CUDA e manipulação de dados
+ * 
+ * Contém funções para geração de texto sintético, carregamento de padrões,
+ * verificação de erros CUDA e cálculo de métricas de desempenho.
+ * 
+ * @author Thiago Carvalho
+ * @date 27/11/2025
+ * @course TN741 - Computação de Alto Desempenho - UFRRJ
+ */
+
 #include "../include/utils.h"
 #include <cuda_runtime.h>
 #include <stdio.h>
@@ -163,7 +175,7 @@ int saveResultsToCSV(const char* filename, Result* results, size_t count) {
 	fprintf(file, "Método,Tempo_Total_ms,Tempo_Kernel_ms,Throughput_Mcps,Matches_Encontrados\n");
 	
 	for (size_t i = 0; i < count; i++) {
-		fprintf(file, "%s,%f,%f,%f,%d\n",
+		fprintf(file, "%s,%f,%f,%f,%lld\n",
 				results[i].method_name,
 				results[i].metrics.execution_time_ms,
 				results[i].metrics.kernel_time_ms,

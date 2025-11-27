@@ -1,3 +1,14 @@
+/**
+ * @file config.h
+ * @brief Configurações e estruturas de dados do projeto
+ * 
+ * Define constantes, estruturas da STT compactada e métricas de desempenho.
+ * 
+ * @author Thiago Carvalho
+ * @date 27/11/2025
+ * @course TN741 - Computação de Alto Desempenho - UFRRJ
+ */
+
 #ifndef CONFIG_H
 #define CONFIG_H
 

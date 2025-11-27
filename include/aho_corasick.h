@@ -1,3 +1,15 @@
+/**
+ * @file aho_corasick.h
+ * @brief Interface do algoritmo Aho-Corasick
+ * 
+ * Define as estruturas do autômato e declara as funções de construção,
+ * busca serial e exportação para GPU.
+ * 
+ * @author Thiago Carvalho
+ * @date 27/11/2025
+ * @course TN741 - Computação de Alto Desempenho - UFRRJ
+ */
+
 #ifndef AHO_CORASICK_H
 #define AHO_CORASICK_H
 

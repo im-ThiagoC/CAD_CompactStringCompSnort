@@ -1,3 +1,15 @@
+/**
+ * @file main.cu
+ * @brief Programa principal para comparação de desempenho do algoritmo Aho-Corasick
+ * 
+ * Implementação CUDA do algoritmo Aho-Corasick com STT compactada.
+ * Baseado no artigo: "Compactação do Algoritmo de Comparação de Strings do Snort"
+ * 
+ * @author Thiago Carvalho
+ * @date 27/11/2025
+ * @course TN741 - Computação de Alto Desempenho - UFRRJ
+ */
+
 #include "../include/aho_corasick.h"
 #include "../include/utils.h"
 #include <stdio.h>

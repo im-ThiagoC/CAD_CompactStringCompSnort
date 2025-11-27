@@ -1,3 +1,16 @@
+/**
+ * @file aho_corasick_gpu.cu
+ * @brief Implementação GPU do algoritmo Aho-Corasick com STT compactada
+ * 
+ * Contém dois kernels CUDA:
+ * - acSearchGlobalCompact: STT compactada em memória global
+ * - acSearchSharedCompact: STT compactada em memória compartilhada
+ * 
+ * @author Thiago Carvalho
+ * @date 27/11/2025
+ * @course TN741 - Computação de Alto Desempenho - UFRRJ
+ */
+
 #include "../include/aho_corasick.h"
 #include "../include/utils.h"
 #include <cuda_runtime.h>

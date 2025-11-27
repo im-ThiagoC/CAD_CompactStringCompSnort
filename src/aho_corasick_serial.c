@@ -1,3 +1,15 @@
+/**
+ * @file aho_corasick_serial.c
+ * @brief Implementação serial do algoritmo Aho-Corasick
+ * 
+ * Contém a construção do autômato (goto, failure, output) e a busca serial.
+ * Também implementa a exportação da STT compactada para uso na GPU.
+ * 
+ * @author Thiago Carvalho
+ * @date 27/11/2025
+ * @course TN741 - Computação de Alto Desempenho - UFRRJ
+ */
+
 #include "../include/aho_corasick.h"
 #include <stdio.h>
 #include <stdlib.h>
