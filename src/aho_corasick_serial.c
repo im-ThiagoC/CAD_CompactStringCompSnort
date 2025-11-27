@@ -5,7 +5,7 @@
 
 // ===== SISTEMA DE LOGGING =====
 // Controla nivel de log: 0=desligado, 1=fases principais, 2=detalhado, 3=muito detalhado
-#define DEBUG_VERBOSE 1
+#define DEBUG_VERBOSE 0
 
 #if DEBUG_VERBOSE >= 1
   #define LOG_PHASE(fmt, ...) printf("[PHASE] " fmt "\n", ##__VA_ARGS__)
@@ -209,17 +209,6 @@ static void buildGotoFunction(AhoCorasick* ac) {
     }
     
     LOG("All patterns processed, num_states=%d", ac->num_states);
-    
-    // Para o estado 0, todas as transicoes nao definidas vao para 0
-    LOG_PHASE("Setting undefined transitions in state 0 to point to state 0");
-    int count_set = 0;
-    for (int i = 0; i < MAX_ALPHABET_SIZE; i++) {
-        if (ac->states[0].goto_table[i] == -1) {
-            ac->states[0].goto_table[i] = 0;
-            count_set++;
-        }
-    }
-    LOG_PHASE("Set %d undefined transitions in state 0 to 0", count_set);
     LOG("buildGotoFunction completed");
 }
 
@@ -279,7 +268,7 @@ static void buildFailureFunction(AhoCorasick* ac) {
     int depth1_count = 0;
     for (int i = 0; i < MAX_ALPHABET_SIZE; i++) {
         int state = ac->states[0].goto_table[i];
-        if (state != 0) {
+        if (state > 0) {  // CORRIGIDO: verificar > 0 (ignora -1 e 0)
             LOG("  State %d (from char 0x%02x) -> failure=0", state, i);
             ac->states[state].failure = 0;
             enqueue(q, state);
@@ -412,10 +401,23 @@ CompactedSTT exportCompactedSTT(AhoCorasick* ac) {
     LOG("Allocating compacted vectors...");
     compact.VI = (int*)malloc(ac->num_states * sizeof(int));
     LOG_PTR("compact.VI", compact.VI);
+    compact.NE = (int*)calloc(ac->num_states, sizeof(int));
+    LOG_PTR("compact.NE", compact.NE);
     compact.VE = (unsigned char*)malloc(total_entries * sizeof(unsigned char));
     LOG_PTR("compact.VE", compact.VE);
     compact.VS = (int*)malloc(total_entries * sizeof(int));
     LOG_PTR("compact.VS", compact.VS);
+    
+    // NOVO: Alocar tabela de lookup direto para estado 0 (seguindo abordagem do autor)
+    compact.est0 = (int*)malloc(256 * sizeof(int));
+    LOG_PTR("compact.est0", compact.est0);
+    
+    // Preencher tabela est0 com transicoes do estado 0
+    // Isso permite acesso O(1) para o estado mais acessado
+    LOG("Filling est0 lookup table for state 0...");
+    for (int j = 0; j < 256; j++) {
+        compact.est0[j] = ac->states[0].goto_table[j];
+    }
     
     // Preencher vetores compactados
     LOG("Filling compacted vectors...");
@@ -423,19 +425,20 @@ CompactedSTT exportCompactedSTT(AhoCorasick* ac) {
     for (int i = 0; i < ac->num_states; i++) {
         if (i < 5) LOG("  Processing state %d", i);
         int start_index = entry_counter;
-        int has_entry = 0;
+        int num_entries = 0;
         
         for (int j = 0; j < MAX_ALPHABET_SIZE; j++) {
             if (ac->states[i].goto_table[j] != -1) {
                 compact.VE[entry_counter] = (unsigned char)j;
                 compact.VS[entry_counter] = ac->states[i].goto_table[j];
                 entry_counter++;
-                has_entry = 1;
+                num_entries++;
             }
         }
         
-        compact.VI[i] = has_entry ? start_index : -1;
-        if (i < 5) LOG("    State %d: VI=%d", i, compact.VI[i]);
+        compact.VI[i] = (num_entries > 0) ? start_index : -1;
+        compact.NE[i] = num_entries;
+        if (i < 5) LOG("    State %d: VI=%d, NE=%d", i, compact.VI[i], compact.NE[i]);
     }
     
     LOG("Compacted vectors filled successfully");
@@ -443,8 +446,9 @@ CompactedSTT exportCompactedSTT(AhoCorasick* ac) {
     printf("Tamanho original: %d KB\n", 
            (ac->num_states * MAX_ALPHABET_SIZE * (int)sizeof(int)) / 1024);
     printf("Tamanho compactado: %d KB\n",
-           (ac->num_states * (int)sizeof(int) + 
-            total_entries * ((int)sizeof(unsigned char) + (int)sizeof(int))) / 1024);
+           (ac->num_states * (int)sizeof(int) * 2 +  // VI + NE
+            total_entries * ((int)sizeof(unsigned char) + (int)sizeof(int)) +
+            256 * (int)sizeof(int)) / 1024);  // + est0
     
     return compact;
 }

@@ -11,9 +11,12 @@ extern "C" {
 #define MAX_PATTERNS 1000
 #define MAX_STATES 50000
 
-// Configurações CUDA
-#define BLOCK_SIZE 256
-#define GRID_SIZE 1000
+// Configurações CUDA - seguindo o artigo original
+// Global: blockSize=100 (como autor)
+// Shared: blockSize=1000 (como autor)
+#define BLOCK_SIZE_GLOBAL 128   // Bloco pequeno para global
+#define BLOCK_SIZE_SHARED 1024  // Bloco máximo para shared
+#define GRID_SIZE 512
 
 // Tipos de memória GPU
 typedef enum {
@@ -32,9 +35,11 @@ typedef struct {
 
 // Estrutura da STT compactada
 typedef struct {
-    int* VI;           // Vetor de Índices
-    unsigned char* VE; // Vetor de Entrada
-    int* VS;           // Vetor de Saída
+    int* VI;           // Vetor de Indices (offset no VE/VS para cada estado)
+    int* NE;           // Numero de Entradas por estado (para busca O(1) do fim)
+    unsigned char* VE; // Vetor de Entrada (caracteres)
+    int* VS;           // Vetor de Saida (proximo estado)
+    int* est0;         // Tabela de lookup direto para estado 0 (256 entradas)
     int num_states;
     int total_entries;
 } CompactedSTT;

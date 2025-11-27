@@ -102,6 +102,7 @@ void runExperiment(const char* experiment_name,
     
     printf("  ✓ Tempo médio: %.2f ms (kernel: %.2f ms)\n", avg_global_time, avg_global_kernel);
     printf("    Speedup: %.2fx\n", calculateSpeedup(serial_time, avg_global_kernel));
+    printf("    Matches: %lld\n", global_matches);
     
     // GPU - Memória Compartilhada (5 iterações)
     printf("\n  [b] GPU - Memória Compartilhada (Compactada)...\n");
@@ -111,7 +112,7 @@ void runExperiment(const char* experiment_name,
     long long shared_matches = 0;
     
     for (int iter = 0; iter < NUM_ITERATIONS; iter++) {
-        PerformanceMetrics m = searchGPU_SharedCompact(text, text_size, compact_stt, h_output_counts);
+        PerformanceMetrics m = searchGPU_SharedCompact(text, text_size, compact_stt, h_failure, h_output_counts);
         shared_times[iter] = m.execution_time_ms;
         shared_kernel_times[iter] = m.kernel_time_ms;
         shared_throughputs[iter] = m.throughput_mcps;
@@ -133,6 +134,7 @@ void runExperiment(const char* experiment_name,
     
     printf("  ✓ Tempo médio: %.2f ms (kernel: %.2f ms)\n", avg_shared_time, avg_shared_kernel);
     printf("    Speedup: %.2fx\n", calculateSpeedup(serial_time, avg_shared_kernel));
+    printf("    Matches: %lld\n", shared_matches);
     
     // Criar arquivo de resultados com médias
     char result_file[256];

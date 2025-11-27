@@ -75,6 +75,7 @@ PerformanceMetrics searchGPU_Global(const char* text, size_t text_size,
 
 PerformanceMetrics searchGPU_SharedCompact(const char* text, size_t text_size,
                                             CompactedSTT compact_stt,
+                                            int* failure_table,
                                             int* output_counts);
 
 #ifdef __cplusplus
