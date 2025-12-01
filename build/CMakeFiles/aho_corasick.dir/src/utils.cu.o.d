@@ -13,10 +13,18 @@ CMakeFiles/aho_corasick.dir/src/utils.cu.o : /home/thiagoc/Code/CAD_CompactStrin
     /usr/include/builtin_types.h \
     /usr/include/device_types.h \
     /usr/include/crt/host_defines.h \
+    /usr/include/ctype.h \
+    /usr/include/x86_64-linux-gnu/bits/types.h \
+    /usr/include/x86_64-linux-gnu/bits/typesizes.h \
+    /usr/include/x86_64-linux-gnu/bits/time64.h \
+    /usr/include/x86_64-linux-gnu/bits/endian.h \
+    /usr/include/x86_64-linux-gnu/bits/endianness.h \
+    /usr/include/x86_64-linux-gnu/bits/types/locale_t.h \
+    /usr/include/x86_64-linux-gnu/bits/types/__locale_t.h \
     /usr/include/driver_types.h \
     /usr/include/vector_types.h \
-    /usr/lib/gcc/x86_64-linux-gnu/12/include/limits.h \
-    /usr/lib/gcc/x86_64-linux-gnu/12/include/syslimits.h \
+    /usr/lib/gcc/x86_64-linux-gnu/13/include/limits.h \
+    /usr/lib/gcc/x86_64-linux-gnu/13/include/syslimits.h \
     /usr/include/limits.h \
     /usr/include/x86_64-linux-gnu/bits/libc-header-start.h \
     /usr/include/x86_64-linux-gnu/bits/posix1_lim.h \
@@ -26,37 +34,30 @@ CMakeFiles/aho_corasick.dir/src/utils.cu.o : /home/thiagoc/Code/CAD_CompactStrin
     /usr/include/x86_64-linux-gnu/bits/posix2_lim.h \
     /usr/include/x86_64-linux-gnu/bits/xopen_lim.h \
     /usr/include/x86_64-linux-gnu/bits/uio_lim.h \
-    /usr/lib/gcc/x86_64-linux-gnu/12/include/stddef.h \
+    /usr/lib/gcc/x86_64-linux-gnu/13/include/stddef.h \
     /usr/include/surface_types.h \
     /usr/include/texture_types.h \
     /usr/include/library_types.h \
     /usr/include/channel_descriptor.h \
     /usr/include/cuda_runtime_api.h \
     /usr/include/cuda_device_runtime_api.h \
-    /usr/include/c++/12/stdlib.h \
-    /usr/include/c++/12/cstdlib \
-    /usr/include/x86_64-linux-gnu/c++/12/bits/c++config.h \
-    /usr/include/x86_64-linux-gnu/c++/12/bits/os_defines.h \
-    /usr/include/x86_64-linux-gnu/c++/12/bits/cpu_defines.h \
+    /usr/include/c++/13/stdlib.h \
+    /usr/include/c++/13/cstdlib \
+    /usr/include/x86_64-linux-gnu/c++/13/bits/c++config.h \
+    /usr/include/x86_64-linux-gnu/c++/13/bits/os_defines.h \
+    /usr/include/x86_64-linux-gnu/c++/13/bits/cpu_defines.h \
     /usr/include/stdlib.h \
     /usr/include/x86_64-linux-gnu/bits/waitflags.h \
     /usr/include/x86_64-linux-gnu/bits/waitstatus.h \
     /usr/include/x86_64-linux-gnu/bits/floatn.h \
     /usr/include/x86_64-linux-gnu/bits/floatn-common.h \
-    /usr/include/x86_64-linux-gnu/bits/types/locale_t.h \
-    /usr/include/x86_64-linux-gnu/bits/types/__locale_t.h \
     /usr/include/x86_64-linux-gnu/sys/types.h \
-    /usr/include/x86_64-linux-gnu/bits/types.h \
-    /usr/include/x86_64-linux-gnu/bits/typesizes.h \
-    /usr/include/x86_64-linux-gnu/bits/time64.h \
     /usr/include/x86_64-linux-gnu/bits/types/clock_t.h \
     /usr/include/x86_64-linux-gnu/bits/types/clockid_t.h \
     /usr/include/x86_64-linux-gnu/bits/types/time_t.h \
     /usr/include/x86_64-linux-gnu/bits/types/timer_t.h \
     /usr/include/x86_64-linux-gnu/bits/stdint-intn.h \
     /usr/include/endian.h \
-    /usr/include/x86_64-linux-gnu/bits/endian.h \
-    /usr/include/x86_64-linux-gnu/bits/endianness.h \
     /usr/include/x86_64-linux-gnu/bits/byteswap.h \
     /usr/include/x86_64-linux-gnu/bits/uintn-identity.h \
     /usr/include/x86_64-linux-gnu/sys/select.h \
@@ -77,7 +78,7 @@ CMakeFiles/aho_corasick.dir/src/utils.cu.o : /home/thiagoc/Code/CAD_CompactStrin
     /usr/include/x86_64-linux-gnu/bits/stdlib-bsearch.h \
     /usr/include/x86_64-linux-gnu/bits/stdlib-float.h \
     /usr/include/x86_64-linux-gnu/bits/stdlib.h \
-    /usr/include/c++/12/bits/std_abs.h \
+    /usr/include/c++/13/bits/std_abs.h \
     /usr/include/driver_functions.h \
     /usr/include/vector_functions.h \
     /usr/include/vector_functions.hpp \
@@ -91,10 +92,10 @@ CMakeFiles/aho_corasick.dir/src/utils.cu.o : /home/thiagoc/Code/CAD_CompactStrin
     /usr/include/x86_64-linux-gnu/bits/timex.h \
     /usr/include/x86_64-linux-gnu/bits/types/struct_tm.h \
     /usr/include/x86_64-linux-gnu/bits/types/struct_itimerspec.h \
-    /usr/include/c++/12/new \
-    /usr/include/c++/12/bits/exception.h \
+    /usr/include/c++/13/new \
+    /usr/include/c++/13/bits/exception.h \
     /usr/include/stdio.h \
-    /usr/lib/gcc/x86_64-linux-gnu/12/include/stdarg.h \
+    /usr/lib/gcc/x86_64-linux-gnu/13/include/stdarg.h \
     /usr/include/x86_64-linux-gnu/bits/types/__fpos_t.h \
     /usr/include/x86_64-linux-gnu/bits/types/__mbstate_t.h \
     /usr/include/x86_64-linux-gnu/bits/types/__fpos64_t.h \
@@ -108,16 +109,18 @@ CMakeFiles/aho_corasick.dir/src/utils.cu.o : /home/thiagoc/Code/CAD_CompactStrin
     /usr/include/x86_64-linux-gnu/bits/stdio2.h \
     /usr/include/assert.h \
     /usr/include/crt/math_functions.h \
-    /usr/include/c++/12/math.h \
-    /usr/include/c++/12/cmath \
-    /usr/include/c++/12/bits/cpp_type_traits.h \
-    /usr/include/c++/12/ext/type_traits.h \
+    /usr/include/c++/13/math.h \
+    /usr/include/c++/13/cmath \
+    /usr/include/c++/13/bits/requires_hosted.h \
+    /usr/include/c++/13/bits/cpp_type_traits.h \
+    /usr/include/c++/13/ext/type_traits.h \
     /usr/include/math.h \
     /usr/include/x86_64-linux-gnu/bits/math-vector.h \
     /usr/include/x86_64-linux-gnu/bits/libm-simd-decl-stubs.h \
     /usr/include/x86_64-linux-gnu/bits/flt-eval-method.h \
     /usr/include/x86_64-linux-gnu/bits/fp-logb.h \
     /usr/include/x86_64-linux-gnu/bits/fp-fast.h \
+    /usr/include/x86_64-linux-gnu/bits/mathcalls-macros.h \
     /usr/include/x86_64-linux-gnu/bits/mathcalls-helper-functions.h \
     /usr/include/x86_64-linux-gnu/bits/mathcalls.h \
     /usr/include/x86_64-linux-gnu/bits/mathcalls-narrow.h \
@@ -155,12 +158,12 @@ CMakeFiles/aho_corasick.dir/src/utils.cu.o : /home/thiagoc/Code/CAD_CompactStrin
     /usr/include/surface_indirect_functions.h \
     /usr/include/crt/cudacc_ext.h \
     /usr/include/device_launch_parameters.h \
-    /usr/include/c++/12/utility \
-    /usr/include/c++/12/bits/stl_relops.h \
-    /usr/include/c++/12/bits/stl_pair.h \
-    /usr/include/c++/12/type_traits \
-    /usr/include/c++/12/bits/move.h \
-    /usr/include/c++/12/bits/utility.h \
-    /usr/include/c++/12/initializer_list \
+    /usr/include/c++/13/utility \
+    /usr/include/c++/13/bits/stl_relops.h \
+    /usr/include/c++/13/bits/stl_pair.h \
+    /usr/include/c++/13/type_traits \
+    /usr/include/c++/13/bits/move.h \
+    /usr/include/c++/13/bits/utility.h \
+    /usr/include/c++/13/initializer_list \
     /home/thiagoc/Code/CAD_CompactStringCompSnort/src/../include/utils.h \
     /home/thiagoc/Code/CAD_CompactStringCompSnort/src/../include/config.h

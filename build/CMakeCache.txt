@@ -40,7 +40,7 @@ CMAKE_COLOR_MAKEFILE:BOOL=ON
 CMAKE_CUDA_ARCHITECTURES:STRING=52
 
 //CUDA compiler
-CMAKE_CUDA_COMPILER:FILEPATH=/usr/bin/nvcc
+CMAKE_CUDA_COMPILER:STRING=/usr/bin/nvcc
 
 //Flags used by the CUDA compiler during all build types.
 CMAKE_CUDA_FLAGS:STRING=
@@ -84,7 +84,7 @@ CMAKE_CXX_FLAGS_RELEASE:STRING=-O3 -DNDEBUG
 CMAKE_CXX_FLAGS_RELWITHDEBINFO:STRING=-O2 -g -DNDEBUG
 
 //C compiler
-CMAKE_C_COMPILER:FILEPATH=/usr/bin/cc
+CMAKE_C_COMPILER:STRING=/usr/bin/cc
 
 //A wrapper around 'ar' adding the appropriate '--plugin' option
 // for the GCC compiler
@@ -438,6 +438,12 @@ CUDA_nvJitLink_static_LIBRARY:FILEPATH=/usr/lib/x86_64-linux-gnu/libnvJitLink_st
 CUDA_nvToolsExt_LIBRARY:FILEPATH=/usr/lib/x86_64-linux-gnu/libnvToolsExt.so
 
 //Path to a library.
+CUDA_nvfatbin_LIBRARY:FILEPATH=/usr/lib/x86_64-linux-gnu/libnvfatbin.so
+
+//Path to a library.
+CUDA_nvfatbin_static_LIBRARY:FILEPATH=/usr/lib/x86_64-linux-gnu/libnvfatbin_static.a
+
+//Path to a library.
 CUDA_nvgraph_LIBRARY:FILEPATH=CUDA_nvgraph_LIBRARY-NOTFOUND
 
 //Path to a library.
@@ -451,6 +457,9 @@ CUDA_nvjpeg_static_LIBRARY:FILEPATH=/usr/lib/x86_64-linux-gnu/libnvjpeg_static.a
 
 //Path to a library.
 CUDA_nvml_LIBRARY:FILEPATH=/usr/lib/x86_64-linux-gnu/libnvidia-ml.so
+
+//Path to a library.
+CUDA_nvml_static_LIBRARY:FILEPATH=CUDA_nvml_static_LIBRARY-NOTFOUND
 
 //Path to a library.
 CUDA_nvperf_host_LIBRARY:FILEPATH=/usr/lib/x86_64-linux-gnu/libnvperf_host.so
@@ -493,9 +502,9 @@ CMAKE_CACHEFILE_DIR:INTERNAL=/home/thiagoc/Code/CAD_CompactStringCompSnort/build
 //Major version of cmake used to create the current loaded cache
 CMAKE_CACHE_MAJOR_VERSION:INTERNAL=3
 //Minor version of cmake used to create the current loaded cache
-CMAKE_CACHE_MINOR_VERSION:INTERNAL=28
+CMAKE_CACHE_MINOR_VERSION:INTERNAL=31
 //Patch version of cmake used to create the current loaded cache
-CMAKE_CACHE_PATCH_VERSION:INTERNAL=3
+CMAKE_CACHE_PATCH_VERSION:INTERNAL=6
 //ADVANCED property for variable: CMAKE_COLOR_MAKEFILE
 CMAKE_COLOR_MAKEFILE-ADVANCED:INTERNAL=1
 //Path to CMake executable.
@@ -610,7 +619,7 @@ CMAKE_RANLIB-ADVANCED:INTERNAL=1
 //ADVANCED property for variable: CMAKE_READELF
 CMAKE_READELF-ADVANCED:INTERNAL=1
 //Path to CMake installation.
-CMAKE_ROOT:INTERNAL=/usr/share/cmake-3.28
+CMAKE_ROOT:INTERNAL=/usr/share/cmake-3.31
 //ADVANCED property for variable: CMAKE_SHARED_LINKER_FLAGS
 CMAKE_SHARED_LINKER_FLAGS-ADVANCED:INTERNAL=1
 //ADVANCED property for variable: CMAKE_SHARED_LINKER_FLAGS_DEBUG
@@ -761,6 +770,10 @@ CUDA_nvJitLink_LIBRARY-ADVANCED:INTERNAL=1
 CUDA_nvJitLink_static_LIBRARY-ADVANCED:INTERNAL=1
 //ADVANCED property for variable: CUDA_nvToolsExt_LIBRARY
 CUDA_nvToolsExt_LIBRARY-ADVANCED:INTERNAL=1
+//ADVANCED property for variable: CUDA_nvfatbin_LIBRARY
+CUDA_nvfatbin_LIBRARY-ADVANCED:INTERNAL=1
+//ADVANCED property for variable: CUDA_nvfatbin_static_LIBRARY
+CUDA_nvfatbin_static_LIBRARY-ADVANCED:INTERNAL=1
 //ADVANCED property for variable: CUDA_nvgraph_LIBRARY
 CUDA_nvgraph_LIBRARY-ADVANCED:INTERNAL=1
 //ADVANCED property for variable: CUDA_nvgraph_static_LIBRARY
@@ -771,6 +784,8 @@ CUDA_nvjpeg_LIBRARY-ADVANCED:INTERNAL=1
 CUDA_nvjpeg_static_LIBRARY-ADVANCED:INTERNAL=1
 //ADVANCED property for variable: CUDA_nvml_LIBRARY
 CUDA_nvml_LIBRARY-ADVANCED:INTERNAL=1
+//ADVANCED property for variable: CUDA_nvml_static_LIBRARY
+CUDA_nvml_static_LIBRARY-ADVANCED:INTERNAL=1
 //ADVANCED property for variable: CUDA_nvperf_host_LIBRARY
 CUDA_nvperf_host_LIBRARY-ADVANCED:INTERNAL=1
 //ADVANCED property for variable: CUDA_nvperf_host_static_LIBRARY
@@ -790,9 +805,11 @@ CUDA_nvrtc_static_LIBRARY-ADVANCED:INTERNAL=1
 //ADVANCED property for variable: CUDA_pcsamplingutil_LIBRARY
 CUDA_pcsamplingutil_LIBRARY-ADVANCED:INTERNAL=1
 //Details about finding CUDAToolkit
-FIND_PACKAGE_MESSAGE_DETAILS_CUDAToolkit:INTERNAL=[/usr/include][/usr/lib/x86_64-linux-gnu/libcudart.so][/usr/bin][v12.0.140()]
+FIND_PACKAGE_MESSAGE_DETAILS_CUDAToolkit:INTERNAL=[/usr/include][/usr/lib/x86_64-linux-gnu/libcudart.so][/usr/bin][v12.4.131()]
 //Details about finding Threads
 FIND_PACKAGE_MESSAGE_DETAILS_Threads:INTERNAL=[TRUE][v()]
+//linker supports push/pop state
+_CMAKE_CUDA_LINKER_PUSHPOP_STATE_SUPPORTED:INTERNAL=TRUE
 //linker supports push/pop state
 _CMAKE_LINKER_PUSHPOP_STATE_SUPPORTED:INTERNAL=TRUE
 

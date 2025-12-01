@@ -57,6 +57,60 @@ cd .. && ./run_experiments.sh
 - GPU NVIDIA (testado em RTX 4060 Ti)
 - Python 3 com matplotlib e pandas (para gráficos)
 
+## Instalação de Dependências no Ubuntu
+
+Siga os passos abaixo em um sistema Ubuntu (18.04/20.04/22.04). As instruções instalam ferramentas de compilação, CMake, Python e bibliotecas para gerar os gráficos (`pandas`, `matplotlib`).
+
+- Atualize a lista de pacotes e instale ferramentas básicas:
+
+```bash
+sudo apt update
+sudo apt install -y build-essential cmake git
+```
+
+- Instale o Python e utilitários (apt):
+
+```bash
+sudo apt install -y python3 python3-pip python3-venv
+```
+
+- Opções para instalar `pandas` e `matplotlib`:
+
+- Via `apt` (rápido, usa pacotes do sistema):
+
+```bash
+sudo apt install -y python3-pandas python3-matplotlib
+```
+
+- Via `pip` dentro de um ambiente virtual (recomendado):
+
+```bash
+# criar e ativar virtualenv
+python3 -m venv .venv
+source .venv/bin/activate
+
+# atualizar pip e instalar dependências Python
+pip install --upgrade pip
+pip install pandas matplotlib
+```
+
+- CUDA Toolkit 12.x:
+
+Para a versão 12.x do CUDA recomendamos seguir as instruções oficiais da NVIDIA para garantir compatibilidade com seus drivers e GPU. Em algumas distribuições você pode instalar um pacote genérico via apt (`nvidia-cuda-toolkit`), porém ele pode não fornecer a versão 12.x mais recente:
+
+```bash
+# alternativa (pode não ser CUDA 12.x):
+sudo apt install -y nvidia-cuda-toolkit
+```
+
+Consulte a página de downloads da NVIDIA para obter o instalador/ppa adequado à sua distribuição e versão do CUDA.
+
+Observações:
+
+- Recomenda-se usar um `virtualenv` para instalar `pandas`/`matplotlib` via `pip` quando precisar de versões mais recentes ou isoladas do sistema.
+- Verifique se os drivers NVIDIA estão instalados e funcionando antes de instalar o CUDA Toolkit.
+- Se você pretende compilar os exemplos CUDA neste repositório, confirme que o `nvcc` está acessível no `PATH` após a instalação do CUDA.
+
 ## Estrutura do Projeto
 
 ```

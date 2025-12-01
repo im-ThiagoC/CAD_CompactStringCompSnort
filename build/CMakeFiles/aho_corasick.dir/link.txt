@@ -1,1 +1,1 @@
-/usr/lib/nvidia-cuda-toolkit/bin/g++ @CMakeFiles/aho_corasick.dir/objects1.rsp CMakeFiles/aho_corasick.dir/cmake_device_link.o -o aho_corasick @CMakeFiles/aho_corasick.dir/linkLibs.rsp -L"/usr/lib/x86_64-linux-gnu/stubs" -L"/usr/lib/x86_64-linux-gnu"
+/usr/lib/nvidia-cuda-toolkit/bin/g++ -Wl,--dependency-file=CMakeFiles/aho_corasick.dir/link.d @CMakeFiles/aho_corasick.dir/objects1.rsp CMakeFiles/aho_corasick.dir/cmake_device_link.o -o aho_corasick @CMakeFiles/aho_corasick.dir/linkLibs.rsp -L"/usr/lib/x86_64-linux-gnu/stubs" -L"/usr/lib/x86_64-linux-gnu"
