@@ -30,9 +30,9 @@ typedef struct {
 
 // Estrutura de um nó do autômato
 typedef struct {
-    int goto_table[MAX_ALPHABET_SIZE];  // Tabela goto
-    int failure;                         // Link de falha
-    OutputList output;                   // Padrões que terminam neste estado
+    int goto_table[MAX_ALPHABET_SIZE];      // Tabela goto
+    int failure;                            // Link de falha
+    OutputList output;                      // Padrões que terminam neste estado
 } ACNode;
 
 // Estrutura do Autômato Aho-Corasick

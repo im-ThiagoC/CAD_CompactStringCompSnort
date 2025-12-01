@@ -1,50 +1,254 @@
-# Padrões para detecção de intrusões (IDS)
-# Baseado em assinaturas do Snort
-# Padrões do exemplo do artigo
+# =============================================================================
+# Padrões para Detecção de Intrusões (IDS) - Baseado no Snort
+# 
+# Autor: Thiago Carvalho
+# Data: 27/11/2025
+# Curso: TN741 - Computação de Alto Desempenho - UFRRJ
+#
+# Referências:
+# - Snort Rules Database (snort.org)
+# - OWASP Top 10
+# - CVE Database
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# PADRÕES DO ARTIGO ORIGINAL (Aho-Corasick Example)
+# -----------------------------------------------------------------------------
 he
 she
 his
 hers
 ushers
-# Comandos maliciosos
+
+# -----------------------------------------------------------------------------
+# SHELL COMMANDS - Execução de Comandos
+# -----------------------------------------------------------------------------
 cmd.exe
 powershell.exe
 /bin/sh
 /bin/bash
+/bin/zsh
+/bin/csh
+/bin/tcsh
+/bin/ksh
+sh -c
+bash -c
+bash -i
+/dev/tcp
+/dev/udp
+
+# -----------------------------------------------------------------------------
+# DOWNLOAD/TRANSFER TOOLS
+# -----------------------------------------------------------------------------
 wget
 curl
+fetch
+nc -e
 nc.exe
+ncat
 netcat
-# SQL Injection
+socat
+tftp
+ftp
+scp
+rsync
+certutil
+bitsadmin
+
+# -----------------------------------------------------------------------------
+# SQL INJECTION
+# -----------------------------------------------------------------------------
 union select
+union all select
 1=1
+'1'='1'
+1'='1
 or 1=1
+' or '1'='1
+" or "1"="1
+or true
+and 1=1
+and true
+order by 1
+group by 1
+having 1=1
 drop table
+drop database
+truncate table
+delete from
+insert into
+update set
 exec(
 execute(
-insert into
-delete from
-# Cross-Site Scripting (XSS)
+exec sp_
+xp_cmdshell
+xp_regread
+xp_regwrite
+xp_dirtree
+sp_executesql
+waitfor delay
+benchmark(
+sleep(
+pg_sleep
+information_schema
+sys.tables
+sysobjects
+syscolumns
+load_file
+into outfile
+into dumpfile
+char(
+concat(
+substring(
+ascii(
+hex(
+unhex(
+@@version
+@@datadir
+
+# -----------------------------------------------------------------------------
+# CROSS-SITE SCRIPTING (XSS)
+# -----------------------------------------------------------------------------
 <script>
+</script>
+<script
 javascript:
+vbscript:
+livescript:
+mocha:
 onerror=
 onload=
+onclick=
+onmouseover=
+onfocus=
+onblur=
+onchange=
+onsubmit=
+ondblclick=
+onkeydown=
+onkeypress=
+onkeyup=
 alert(
+confirm(
+prompt(
 document.cookie
+document.domain
+document.write
+document.location
+document.URL
 eval(
+setTimeout(
+setInterval(
 innerHTML
-# Path Traversal
-../../../../
-..\..\..\..\
-etc/passwd
+outerHTML
+insertAdjacentHTML
+fromCharCode
+String.fromCharCode
+atob(
+btoa(
+<img src=
+<svg onload
+<body onload
+<iframe
+<object
+<embed
+<link href
+<meta http-equiv
+expression(
+@import
+data:text/html
+data:application
+
+# -----------------------------------------------------------------------------
+# PATH TRAVERSAL / LFI / RFI
+# -----------------------------------------------------------------------------
+../
+..\
+..%2f
+..%5c
+....//
+....\\
+%2e%2e%2f
+%2e%2e/
+..%c0%af
+..%c1%9c
+/etc/passwd
+/etc/shadow
+/etc/hosts
+/etc/group
+/etc/issue
+/etc/motd
+/etc/mysql
+/proc/self
+/proc/version
+/proc/cmdline
+/var/log
+/var/www
+/var/mail
 windows/system32
-# Command Injection
+windows\system32
+boot.ini
+win.ini
+system.ini
+php://input
+php://filter
+expect://
+zip://
+phar://
+file://
+dict://
+gopher://
+ldap://
+
+# -----------------------------------------------------------------------------
+# COMMAND INJECTION
+# -----------------------------------------------------------------------------
 shell_exec
 system(
 passthru(
 popen(
 proc_open
-# Malware Signatures
+exec(
+pcntl_exec
+assert(
+preg_replace
+create_function
+call_user_func
+call_user_func_array
+array_map
+array_filter
+usort(
+uasort(
+uksort(
+array_walk
+array_reduce
+ReflectionFunction
+|cat
+|ls
+|id
+|whoami
+|pwd
+|uname
+;cat
+;ls
+;id
+;whoami
+;pwd
+;uname
+`cat
+`ls
+`id
+`whoami
+$(cat
+$(ls
+$(id
+$(whoami
+$IFS
+${IFS}
+
+# -----------------------------------------------------------------------------
+# MALWARE SIGNATURES
+# -----------------------------------------------------------------------------
 trojan
 backdoor
 rootkit
@@ -53,30 +257,293 @@ ransomware
 cryptolocker
 wannacry
 petya
-# Network Attacks
+notpetya
+locky
+cerber
+ryuk
+maze
+revil
+darkside
+conti
+lockbit
+blackcat
+emotet
+trickbot
+qakbot
+icedid
+cobalt strike
+meterpreter
+mimikatz
+lazagne
+empire
+covenant
+sliver
+powershell empire
+shellcode
+payload
+reverse shell
+bind shell
+webshell
+c99shell
+r57shell
+b374k
+wso shell
+china chopper
+aspxspy
+phpspy
+
+# -----------------------------------------------------------------------------
+# NETWORK ATTACKS / RECONNAISSANCE
+# -----------------------------------------------------------------------------
 syn flood
+synflood
 ddos
+dos attack
 ping -f
+ping -l
+ping -s
+hping
 nmap
+masscan
+zmap
 portscan
-brutefore
-# File Upload Attacks
+port scan
+nikto
+sqlmap
+dirb
+dirbuster
+gobuster
+ffuf
+wfuzz
+burp
+burpsuite
+owasp zap
+acunetix
+nessus
+openvas
+metasploit
+hydra
+medusa
+john the ripper
+hashcat
+aircrack
+wifite
+bettercap
+ettercap
+arpspoof
+dnsspoof
+sslstrip
+responder
+impacket
+crackmapexec
+bloodhound
+sharphound
+rubeus
+kerberoast
+asreproast
+
+# -----------------------------------------------------------------------------
+# FILE UPLOAD ATTACKS
+# -----------------------------------------------------------------------------
 .php
-.jsp
+.php3
+.php4
+.php5
+.php7
+.phtml
+.phar
+.inc
 .asp
+.aspx
+.ashx
+.asmx
+.cer
+.asa
+.jsp
+.jspx
+.jsf
+.jsw
+.jsv
+.jspf
 .exe
 .bat
+.cmd
+.com
+.pif
+.scr
+.msi
+.ps1
+.vbs
+.vbe
+.js
+.jse
+.wsf
+.wsh
+.hta
+.cpl
+.msc
+.jar
+.war
+.py
+.pl
+.rb
 .sh
-# HTTP Attacks
+.cgi
+.dll
+.so
+
+# -----------------------------------------------------------------------------
+# HTTP ATTACKS / SUSPICIOUS REQUESTS
+# -----------------------------------------------------------------------------
 POST /admin
+GET /admin
+POST /login
 GET /phpmyadmin
+GET /phpMyAdmin
+GET /pma
+GET /mysql
+GET /myadmin
+GET /wp-admin
+GET /wp-login
+GET /administrator
+GET /manager
+GET /console
+GET /webui
+GET /panel
+GET /dashboard
 User-Agent: sqlmap
-nikto
-burpsuite
-# Additional patterns
+User-Agent: nikto
+User-Agent: nmap
+User-Agent: masscan
+User-Agent: dirbuster
+User-Agent: gobuster
+User-Agent: wfuzz
+User-Agent: curl
+User-Agent: wget
+User-Agent: python
+User-Agent: perl
+User-Agent: java
+User-Agent: ruby
+X-Forwarded-For:
+X-Real-IP:
+X-Originating-IP:
+X-Remote-IP:
+X-Remote-Addr:
+Client-IP:
+True-Client-IP:
+CF-Connecting-IP:
+Via:
+Forwarded:
+
+# -----------------------------------------------------------------------------
+# AUTHENTICATION / CREDENTIAL ATTACKS
+# -----------------------------------------------------------------------------
 password
+passwd
+pwd
+credential
+username
+user
 admin
+administrator
 root
+superuser
+guest
+test
+demo
+default
+login
+logon
+signin
+signup
+register
+authentication
+authorization
+token
+session
+cookie
+api_key
+apikey
+api-key
+secret
+private_key
+privatekey
+private-key
+access_token
+refresh_token
+bearer
+oauth
+jwt
+basic auth
+digest auth
+
+# -----------------------------------------------------------------------------
+# EXPLOIT / VULNERABILITY PATTERNS
+# -----------------------------------------------------------------------------
 exploit
 vulnerability
+vuln
+cve-
 0day
+zero-day
+zeroday
+poc
+proof of concept
+buffer overflow
+heap overflow
+stack overflow
+use after free
+format string
+integer overflow
+race condition
+privilege escalation
+privesc
+arbitrary code
+code execution
+rce
+remote code
+local file inclusion
+lfi
+remote file inclusion
+rfi
+server side request
+ssrf
+xml external entity
+xxe
+deserialization
+insecure deserialization
+idor
+broken access
+security misconfiguration
+injection flaw
+xss
+csrf
+clickjacking
+open redirect
+path traversal
+directory traversal
+
+# -----------------------------------------------------------------------------
+# ENCODED / OBFUSCATED PATTERNS
+# -----------------------------------------------------------------------------
+base64
+base32
+rot13
+urlencode
+%00
+%0a
+%0d
+%09
+%20
+%27
+%22
+%3c
+%3e
+%2f
+%5c
+&#x
+&#0
+\x00
+\x0a
+\x0d
+\u0000

@@ -2,7 +2,7 @@
 
 ## Resumo Executivo
 
-A implementação demonstra que a **memória compartilhada com STT compactada** é mais eficiente que a memória global para textos grandes (≥10 MB), com ganhos de até **37%** no tempo de execução.
+A implementação demonstra que a **memória compartilhada com STT compactada** é mais eficiente que a memória global para textos grandes (≥100 MB), com ganhos de até **25%** no tempo de execução.
 
 ## Configuração de Teste
 
@@ -11,73 +11,104 @@ A implementação demonstra que a **memória compartilhada com STT compactada** 
   - 48 KB Shared Memory por bloco
   - 8 GB GDDR6
 - **CPU**: AMD Ryzen (baseline serial)
-- **Padrões**: 69 assinaturas IDS (464 estados no autômato)
-- **STT Compactada**: 6 KB (vs 464 KB original) - **compressão de 98.7%**
+- **RAM**: 32GB 3200Mhz DDR4 (2x16GB)
+- **Padrões**: 495 assinaturas tipo Snort IDS (2830 estados no autômato)
+- **STT Compactada**: 36 KB (vs 2830 KB original) - **compressão de 98.7%**
 
-## Resultados por Tamanho
+## Estratégia de Implementação
 
-### Textos Pequenos (≤1 MB)
+### Kernel Híbrido de Shared Memory
+
+Para suportar autômatos grandes (>1024 estados), implementamos uma **abordagem híbrida**:
+
+1. **Shared Memory Cache**:
+   - `est0[256]`: Lookup direto do estado 0 (mais acessado)
+   - `failure_cache[1024]`: Cache de failure links
+   - `output_cache[1024]`: Cache de contagens de output
+
+2. **Global Memory**:
+   - `VI`, `NE`, `VE`, `VS`: Estrutura completa da STT compactada
+
+Esta abordagem permite:
+- Suportar qualquer tamanho de autômato
+- Manter benefícios de shared memory para dados críticos
+- Evitar limite de 48KB de shared memory
+
+### Block Sizes
+
+Seguindo a abordagem do artigo original:
+
+- **GPU Global**: `BLOCK_SIZE = 128` - Blocos menores, eficiente com cache L2
+- **GPU Shared**: `BLOCK_SIZE = 1024` - Blocos maiores para melhor ocupância
+
+## Resultados por Tamanho (495 padrões)
+
+### Textos Pequenos (≤10 MB)
 
 | Tamanho | Serial | GPU Global | GPU Shared | Melhor |
 |---------|--------|------------|------------|--------|
-| 1 KB    | 0.01 ms | 0.11 ms (0.08x) | 0.07 ms (0.13x) | Serial |
-| 10 KB   | 0.07 ms | 0.04 ms (1.80x) | 0.04 ms (1.66x) | Global |
-| 100 KB  | 0.62 ms | 0.07 ms (8.39x) | 0.13 ms (4.75x) | Global |
-| 1 MB    | 6.65 ms | 0.11 ms (59x) | 0.66 ms (10x) | Global |
+| 1 KB    | 0.01 ms | 0.15 ms | 0.14 ms | Serial |
+| 100 KB  | 0.80 ms | 0.22 ms (4x) | 0.50 ms (2x) | Global |
+| 1 MB    | 8.01 ms | 0.37 ms (22x) | 2.76 ms (3x) | Global |
+| 10 MB   | 81 ms | 1.46 ms (56x) | 4.08 ms (20x) | Global |
 
-**Análise**: Para textos pequenos, a GPU Global é mais eficiente porque:
-1. O overhead de carregar a STT para shared memory não compensa
-2. O cache L2 da RTX 4060 Ti (32 MB) é muito eficiente
-3. Poucos caracteres por thread = poucas buscas na STT
+**Análise**: Para textos pequenos com automatos grandes:
+- O overhead do cache híbrido não compensa
+- Cache L2 da RTX 4060 Ti (32 MB) é muito eficiente
 
-### Textos Grandes (≥10 MB)
+### Textos Grandes (≥50 MB)
 
 | Tamanho | Serial | GPU Global | GPU Shared | Ganho Shared |
 |---------|--------|------------|------------|--------------|
-| 10 MB   | 65 ms  | 1.09 ms (60x) | 0.69 ms (95x) | **+37%** |
-| 50 MB   | 321 ms | 3.06 ms (105x) | 2.35 ms (136x) | **+23%** |
-| 100 MB  | 626 ms | 5.05 ms (124x) | 5.15 ms (122x) | -2% |
-| 500 MB  | 3163 ms | 24.6 ms (129x) | 20.0 ms (158x) | **+18%** |
-| 1 GB    | 6393 ms | 48.4 ms (132x) | 40.9 ms (157x) | **+16%** |
+| 50 MB   | 406 ms | 6.87 ms (59x) | 8.51 ms (48x) | -24% |
+| 100 MB  | 817 ms | 18.65 ms (44x) | 14.96 ms (55x) | **+20%** |
+| 500 MB  | 4144 ms | 83.59 ms (50x) | 62.49 ms (66x) | **+25%** |
+| 1 GB    | ~8500 ms | ~150 ms (~57x) | ~120 ms (~71x) | **~25%** |
 
-**Análise**: Para textos grandes, a Shared Memory é mais eficiente porque:
-1. Latência da shared memory (~5 ciclos) vs global (~400 ciclos)
-2. Muitos caracteres por thread = muitas buscas na STT
-3. O custo de carregamento é amortizado pelo número de acessos
+**Análise**: Para textos ≥100 MB, a Shared Memory vence porque:
+1. O custo do cache híbrido é amortizado por mais acessos
+2. `est0` em shared memory acelera significativamente (estado 0 é ~50% dos acessos)
+3. `failure_cache` e `output_cache` reduzem acessos à global memory
 
-## Throughput
+## Throughput Máximo
 
-| Versão | Throughput Máximo | Tamanho Ideal |
-|--------|-------------------|---------------|
-| Serial | ~168 Mcps | Qualquer |
-| GPU Global | ~22 Gcps | 1 MB |
-| GPU Shared | ~26 Gcps | 50-500 MB |
+| Versão | Throughput Máximo | Alcançado em |
+|--------|-------------------|--------------|
+| Serial | ~130 Mcps | Qualquer |
+| GPU Global | ~7.8 Gcps | 10-50 MB |
+| GPU Shared | ~8.4 Gcps | 500 MB |
 
-## Configuração dos Kernels
+## Comparação: 69 vs 495 Padrões
 
-A diferença de block sizes segue a abordagem do artigo original:
+| Métrica | 69 Padrões | 495 Padrões |
+|---------|------------|-------------|
+| Estados | 464 | 2830 |
+| STT Original | 464 KB | 2830 KB |
+| STT Compactada | 6 KB | 36 KB |
+| Crossover Point | 10 MB | 100 MB |
+| Ganho Máximo Shared | +37% | +25% |
 
-- **GPU Global**: `BLOCK_SIZE = 128`
-  - Blocos menores, menos overhead de sincronização
-  - Eficiente com cache L2
-
-- **GPU Shared**: `BLOCK_SIZE = 1024`
-  - Blocos maiores para melhor ocupância
-  - Mais threads compartilham a mesma STT carregada
+Com mais padrões, o crossover point aumenta devido ao maior overhead do cache híbrido.
 
 ## Conclusões
 
-1. **Compactação é essencial**: Reduz a STT de 464 KB para 6 KB (98.7%)
+1. **Compactação é essencial**: Reduz STT em 98.7% (2830 KB → 36 KB)
 
-2. **Shared Memory vence para textos grandes**: Ganhos de 16-37% para ≥10 MB
+2. **Kernel Híbrido funciona**: Suporta automatos de qualquer tamanho
 
-3. **Crossover point**: ~10 MB - abaixo disso, Global é melhor
+3. **Shared Memory vence para textos muito grandes**: Ganhos de 20-25% para ≥100 MB
 
-4. **Hardware moderno favorece Global para textos pequenos**: 
-   - O cache L2 de 32 MB da RTX 4060 Ti mascara a latência da memória global
-   - GPUs mais antigas (sem cache L2 grande) teriam resultados diferentes
+4. **Crossover point depende do tamanho do autômato**:
+   - 69 padrões (464 estados): ~10 MB
+   - 495 padrões (2830 estados): ~100 MB
 
-5. **Speedup máximo**: 157x vs CPU serial (para 1 GB com Shared Memory)
+5. **Speedup máximo**: 66x vs CPU serial (500 MB com Shared Memory)
+
+## Melhorias Futuras
+
+1. **Carregar STT completa** quando automato cabe na shared memory
+2. **Texture memory** para a STT em global memory
+3. **Constant memory** para est0 (acesso broadcast)
 
 ## Arquivos de Resultado
 

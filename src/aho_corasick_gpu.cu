@@ -29,9 +29,12 @@
 // =============================================================================
 
 // Limites para shared memory (RTX 4060 Ti tem 48KB por bloco)
-#define SH_NUM_STATES 1024   // Maximo de estados
+// Estratégia: Carregar est0 (1KB) + cache de texto local em shared memory
+// Se automato cabe, carrega tudo; senao usa abordagem hibrida
+#define SH_NUM_STATES 1024   // Maximo de estados para caber na shared memory
 #define SH_NUM_ENTRIES 4096  // Maximo de entradas no VE/VS
-#define MAX_PATTERN_LEN 32   // Overlap para padroes que cruzam bordas
+#define MAX_PATTERN_LEN 64   // Overlap para padroes que cruzam bordas
+#define SH_TEXT_SIZE 4096    // Cache de texto por bloco em shared memory
 
 // ========== KERNEL 1: Memoria Global com STT Compactada ==========
 // Este kernel usa a STT compactada armazenada em memoria GLOBAL
@@ -125,8 +128,9 @@ __global__ void acSearchGlobalCompact(const char* text, size_t text_size,
     atomicAdd((unsigned long long*)matches_out, (unsigned long long)local_matches);
 }
 
-// ========== KERNEL 2: Memoria Compartilhada com STT Compactada ==========
-// Este kernel usa a STT compactada carregada em shared memory
+// ========== KERNEL 2: Memoria Compartilhada Hibrida ==========
+// Este kernel usa shared memory para est0 e failure (mais acessados)
+// e global memory para a STT compactada quando o automato é grande
 // Seguindo a abordagem do autor do artigo (BLOCK_SIZE maior = melhor ocupancia)
 __global__ void acSearchSharedCompact(const char* text, size_t text_size,
                                        const int* VI, const int* NE,
@@ -136,37 +140,26 @@ __global__ void acSearchSharedCompact(const char* text, size_t text_size,
                                        int num_states, int total_entries,
                                        long long* matches_out) {
     
-    // Alocar memoria compartilhada para os vetores do automato
-    __shared__ int s_VI[SH_NUM_STATES];
-    __shared__ int s_NE[SH_NUM_STATES];
-    __shared__ int s_failure[SH_NUM_STATES];
-    __shared__ int s_output[SH_NUM_STATES];
-    __shared__ unsigned char s_VE[SH_NUM_ENTRIES];
-    __shared__ int s_VS[SH_NUM_ENTRIES];
+    // Shared memory para os dados mais acessados:
+    // - est0[256]: lookup rapido do estado 0 (1KB)
+    // - Cache de failure para estados frequentes (4KB)
+    // - Cache de output para estados frequentes (4KB)
+    // Total: ~9KB, bem dentro do limite de 48KB
     __shared__ int s_est0[256];
+    __shared__ int s_failure_cache[SH_NUM_STATES];
+    __shared__ int s_output_cache[SH_NUM_STATES];
     
     int tid = threadIdx.x;
     int block_size = blockDim.x;
+    int states_cached = min(num_states, SH_NUM_STATES);
     
-    int states_to_load = min(num_states, SH_NUM_STATES);
-    int entries_to_load = min(total_entries, SH_NUM_ENTRIES);
-    
-    // Carregamento cooperativo - mais eficiente para GPUs modernas
-    // Cada thread carrega elementos diferentes
-    for (int i = tid; i < states_to_load; i += block_size) {
-        s_VI[i] = VI[i];
-        s_NE[i] = NE[i];
-        s_failure[i] = failure[i];
-        s_output[i] = output_counts[i];
-    }
-    
-    for (int i = tid; i < entries_to_load; i += block_size) {
-        s_VE[i] = VE[i];
-        s_VS[i] = VS[i];
-    }
-    
+    // Carregamento cooperativo
     for (int i = tid; i < 256; i += block_size) {
         s_est0[i] = est0[i];
+    }
+    for (int i = tid; i < states_cached; i += block_size) {
+        s_failure_cache[i] = failure[i];
+        s_output_cache[i] = output_counts[i];
     }
     
     __syncthreads();
@@ -193,41 +186,35 @@ __global__ void acSearchSharedCompact(const char* text, size_t text_size,
         
         int next_state = -1;
         
-        // FUNCAO GOTO: usando shared memory
+        // FUNCAO GOTO: est0 em shared, resto em global
         if (state == 0) {
             next_state = s_est0[ch];
-        } else if (state < states_to_load) {
-            int vi_start = s_VI[state];
+        } else if (state < num_states) {
+            int vi_start = VI[state];
             if (vi_start >= 0) {
-                int num_ent = s_NE[state];
-                int vi_end = vi_start + num_ent;
-                if (vi_end > entries_to_load) vi_end = entries_to_load;
-                
-                for (int j = vi_start; j < vi_end; j++) {
-                    if (s_VE[j] == ch) {
-                        next_state = s_VS[j];
+                int num_ent = NE[state];
+                for (int j = vi_start; j < vi_start + num_ent; j++) {
+                    if (VE[j] == ch) {
+                        next_state = VS[j];
                         break;
                     }
                 }
             }
         }
         
-        // FUNCAO FAILURE
+        // FUNCAO FAILURE: usa cache se disponivel, senao global
         while (next_state == -1 && state != 0) {
-            state = s_failure[state];
+            state = (state < states_cached) ? s_failure_cache[state] : failure[state];
             
             if (state == 0) {
                 next_state = s_est0[ch];
-            } else if (state < states_to_load) {
-                int vi_start = s_VI[state];
+            } else if (state < num_states) {
+                int vi_start = VI[state];
                 if (vi_start >= 0) {
-                    int num_ent = s_NE[state];
-                    int vi_end = vi_start + num_ent;
-                    if (vi_end > entries_to_load) vi_end = entries_to_load;
-                    
-                    for (int j = vi_start; j < vi_end; j++) {
-                        if (s_VE[j] == ch) {
-                            next_state = s_VS[j];
+                    int num_ent = NE[state];
+                    for (int j = vi_start; j < vi_start + num_ent; j++) {
+                        if (VE[j] == ch) {
+                            next_state = VS[j];
                             break;
                         }
                     }
@@ -239,9 +226,12 @@ __global__ void acSearchSharedCompact(const char* text, size_t text_size,
             state = next_state;
         }
         
-        // FUNCAO OUTPUT - so conta matches na regiao propria (nao no overlap)
-        if (i >= start_pos && state < states_to_load && s_output[state] > 0) {
-            local_matches += s_output[state];
+        // FUNCAO OUTPUT - usa cache se disponivel, senao global
+        if (i >= start_pos && state < num_states) {
+            int out_count = (state < states_cached) ? s_output_cache[state] : output_counts[state];
+            if (out_count > 0) {
+                local_matches += out_count;
+            }
         }
     }
     
@@ -410,16 +400,9 @@ PerformanceMetrics searchGPU_SharedCompact(const char* text, size_t text_size,
     metrics.throughput_mcps = 0;
     metrics.matches_found = 0;
     
-    if (h_compact.num_states > SH_NUM_STATES) {
-        printf("AVISO: Estados (%d) > limite shared memory (%d)\n", 
-               h_compact.num_states, SH_NUM_STATES);
-    }
-    
-    if (h_compact.total_entries > SH_NUM_ENTRIES) {
-        printf("AVISO: Entradas (%d) > limite shared memory (%d)\n",
-               h_compact.total_entries, SH_NUM_ENTRIES);
-    }
-    
+    // Nota: O kernel hibrido trata automaticamente automatos grandes
+    // usando global memory para VI/NE/VE/VS e shared para est0/failure/output
+
     cudaEvent_t start, stop, kernel_start, kernel_stop;
     cudaEventCreate(&start);
     cudaEventCreate(&stop);

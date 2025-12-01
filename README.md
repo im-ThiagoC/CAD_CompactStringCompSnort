@@ -2,16 +2,21 @@
 
 Implementação CUDA do algoritmo Aho-Corasick com STT (State Transition Table) compactada, baseada no artigo:
 
-> **"Compactação do Algoritmo de Comparação de Strings do Snort"**
-> TN741 - Computação de Alto Desempenho - UFRRJ
+> **"Compactação do Algoritmo de Comparação de Strings do Snort para o uso na Memória Compartilhada de GPUs"**
+> 
+> José Bonifácio da Silva Júnior, Edward David Moreno, Ricardo Ferreira dos Santos
+> 
+> WSCAD 2017 - XVIII Simpósio em Sistemas Computacionais de Alto Desempenho
+
+**Disciplina**: TN741 - Computação de Alto Desempenho - UFRRJ
 
 ## Objetivo
 
 Comparar o desempenho de diferentes abordagens de memória GPU para o algoritmo Aho-Corasick:
 - **Memória Global**: STT compactada em memória global
-- **Memória Compartilhada**: STT compactada carregada em shared memory
+- **Memória Compartilhada**: STT compactada com cache híbrido em shared memory
 
-O artigo demonstra que a compactação da STT (de ~464KB para ~6KB) permite seu armazenamento completo na memória compartilhada da GPU, eliminando a latência de acesso à memória global.
+O artigo demonstra que a compactação da STT permite seu armazenamento na memória compartilhada da GPU, eliminando a latência de acesso à memória global. Nossa implementação suporta **495 padrões Snort** (2830 estados), alcançando **compressão de 98.7%** (2830 KB → 36 KB).
 
 ## Conceitos Chave
 
@@ -73,19 +78,28 @@ cd .. && ./run_experiments.sh
 
 ## Resultados
 
-Para textos grandes (≥10 MB), a versão com memória compartilhada é consistentemente mais rápida:
+Testado com **495 padrões Snort** (2830 estados no autômato):
 
-| Tamanho | Global Speedup | Shared Speedup | Ganho Shared |
-|---------|----------------|----------------|--------------|
-| 10 MB   | 60x            | 95x            | +37%         |
-| 50 MB   | 105x           | 136x           | +23%         |
-| 500 MB  | 129x           | 158x           | +18%         |
-| 1 GB    | 132x           | 157x           | +16%         |
+| Tamanho | Serial | GPU Global | GPU Shared | Ganho Shared vs Global |
+|---------|--------|------------|------------|------------------------|
+| 10 MB   | 81 ms  | 1.46 ms (56x) | 4.08 ms (20x) | -64% (Global melhor) |
+| 100 MB  | 817 ms | 18.65 ms (44x) | 14.96 ms (55x) | **+20%** |
+| 500 MB  | 4144 ms | 83.59 ms (50x) | 62.49 ms (66x) | **+25%** |
+| 1 GB    | ~8500 ms | ~150 ms (~57x) | ~120 ms (~71x) | **~25%** |
+
+**Crossover Point**: ~100 MB (acima disso, Shared Memory é mais eficiente)
 
 Veja [ANALYSIS.md](ANALYSIS.md) para análise detalhada.
 
+## Ambiente de Teste
+
+- **GPU**: NVIDIA GeForce RTX 4060 Ti (34 SMs, 4352 CUDA Cores, 8 GB GDDR6)
+- **CPU**: AMD Ryzen 5 5500 (6 cores / 12 threads)
+- **RAM**: 32 GB DDR4 3200MHz
+- **SO**: Linux (WSL2)
+
 ## Autores
 
-- Implementação: Thiago Cardoso
+- Implementação: Thiago Carvalho
 - Disciplina: TN741 - Computação de Alto Desempenho
 - Instituição: UFRRJ - Universidade Federal Rural do Rio de Janeiro

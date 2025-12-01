@@ -1,0 +1,621 @@
+\documentclass[aspectratio=169]{beamer}
+\usetheme{Madrid}
+\usecolortheme{whale}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[portuguese]{babel}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{tikz}
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.18}
+
+\title[Aho-Corasick GPU]{Compactação do Algoritmo de Comparação de Strings do Snort}
+\subtitle{Implementação CUDA do Algoritmo Aho-Corasick}
+\author{Thiago Carvalho}
+\date{30 de Novembro de 2025}
+
+\begin{document}
+
+% Slide de título
+\begin{frame}
+    \titlepage
+\end{frame}
+
+% Sumário
+\begin{frame}{Sumário}
+    \tableofcontents
+\end{frame}
+
+% ==================== SEÇÃO 1: INTRODUÇÃO ====================
+\section{Introdução}
+
+\begin{frame}{Contexto e Motivação}
+    \begin{columns}
+        \column{0.5\textwidth}
+        \textbf{O Problema:}
+        \begin{itemize}
+            \item Snort IDS precisa comparar pacotes de rede com milhares de padrões
+            \item Comparação de strings é o gargalo (~70\% do tempo)
+            \item Redes modernas: 10-100 Gbps
+        \end{itemize}
+        
+        \vspace{0.5cm}
+        \textbf{A Solução:}
+        \begin{itemize}
+            \item Algoritmo Aho-Corasick (busca múltiplos padrões em O(n+m))
+            \item Aceleração via GPU (CUDA)
+            \item Compactação da tabela de estados (STT)
+        \end{itemize}
+        
+        \column{0.5\textwidth}
+        \begin{tikzpicture}[scale=0.7]
+            \node[draw, rectangle, fill=blue!20, minimum width=3cm] at (0,3) {Pacotes de Rede};
+            \node[draw, rectangle, fill=green!20, minimum width=3cm] at (0,1.5) {Snort IDS};
+            \node[draw, rectangle, fill=orange!20, minimum width=3cm] at (0,0) {Aho-Corasick GPU};
+            \draw[->, thick] (0,2.7) -- (0,1.8);
+            \draw[->, thick] (0,1.2) -- (0,0.3);
+        \end{tikzpicture}
+    \end{columns}
+\end{frame}
+
+\begin{frame}{Algoritmo Aho-Corasick}
+    \begin{columns}
+        \column{0.55\textwidth}
+        \textbf{Estruturas principais:}
+        \begin{enumerate}
+            \item \textbf{Função GOTO}: Transições entre estados
+            \item \textbf{Função FAILURE}: Fallback quando não há transição
+            \item \textbf{Função OUTPUT}: Padrões encontrados em cada estado
+        \end{enumerate}
+        
+        \vspace{0.5cm}
+        \textbf{Complexidade:}
+        \begin{itemize}
+            \item Construção: $O(m)$ onde $m$ = soma dos padrões
+            \item Busca: $O(n + z)$ onde $n$ = texto, $z$ = matches
+        \end{itemize}
+        
+        \column{0.45\textwidth}
+        \begin{tikzpicture}[scale=0.6, every node/.style={scale=0.8}]
+            % Estados
+            \node[draw, circle, fill=yellow!30] (0) at (0,0) {0};
+            \node[draw, circle] (1) at (2,1) {1};
+            \node[draw, circle] (2) at (4,1) {2};
+            \node[draw, circle, fill=green!30] (3) at (6,1) {3};
+            \node[draw, circle] (4) at (2,-1) {4};
+            \node[draw, circle] (5) at (4,-1) {5};
+            \node[draw, circle, fill=green!30] (6) at (6,-1) {6};
+            
+            % Transições GOTO
+            \draw[->, thick] (0) -- node[above] {h} (1);
+            \draw[->, thick] (1) -- node[above] {e} (2);
+            \draw[->, thick] (2) -- node[above] {r} (3);
+            \draw[->, thick] (0) -- node[below] {s} (4);
+            \draw[->, thick] (4) -- node[below] {h} (5);
+            \draw[->, thick] (5) -- node[below] {e} (6);
+            
+            % Failure links (pontilhadas)
+            \draw[->, dashed, red] (5) to[bend right=30] (1);
+            \draw[->, dashed, red] (6) to[bend right=30] (2);
+        \end{tikzpicture}
+        
+        \small Exemplo: padrões "her" e "she"
+        
+        \small Linhas pontilhadas = failure links
+    \end{columns}
+\end{frame}
+
+% ==================== SEÇÃO 2: COMPACTAÇÃO ====================
+\section{Compactação da STT}
+
+\begin{frame}{Problema: State Transition Table (STT)}
+    \textbf{STT Tradicional:}
+    \begin{itemize}
+        \item Matriz $N_{estados} \times 256$ (todos os caracteres ASCII)
+        \item A maioria das entradas é -1 (sem transição)
+        \item Para 2830 estados: $2830 \times 256 \times 4$ bytes = \textbf{2.9 MB}
+    \end{itemize}
+    
+    \vspace{0.5cm}
+    \begin{center}
+    \begin{tabular}{c|cccccccc}
+        \toprule
+        Estado & a & b & c & ... & h & ... & z & ... \\
+        \midrule
+        0 & -1 & -1 & -1 & ... & 1 & ... & -1 & ... \\
+        1 & -1 & -1 & -1 & ... & -1 & ... & -1 & ... \\
+        ... & ... & ... & ... & ... & ... & ... & ... & ... \\
+        \bottomrule
+    \end{tabular}
+    \end{center}
+    
+    \vspace{0.3cm}
+    \textcolor{red}{$\rightarrow$ 99\% das entradas são -1 (desperdício de memória!)}
+\end{frame}
+
+\begin{frame}{Solução: STT Compactada}
+    \textbf{Estrutura compactada com 5 vetores:}
+    
+    \begin{columns}
+        \column{0.5\textwidth}
+        \begin{itemize}
+            \item \textbf{VI} (Vetor de Índices): Início das entradas de cada estado
+            \item \textbf{NE} (Número de Entradas): Quantidade de transições por estado
+            \item \textbf{VE} (Vetor de Entradas): Caracteres de entrada
+            \item \textbf{VS} (Vetor de Estados): Estados destino
+            \item \textbf{est0}: Lookup direto para estado 0
+        \end{itemize}
+        
+        \column{0.5\textwidth}
+        \begin{center}
+        \textbf{Resultado:}
+        
+        \vspace{0.3cm}
+        \begin{tabular}{lr}
+            \toprule
+            Métrica & Valor \\
+            \midrule
+            Estados & 2830 \\
+            Entradas válidas & 2829 \\
+            STT Original & 2830 KB \\
+            STT Compactada & 36 KB \\
+            \textbf{Compressão} & \textbf{98.7\%} \\
+            \bottomrule
+        \end{tabular}
+        \end{center}
+    \end{columns}
+\end{frame}
+
+% ==================== SEÇÃO 3: IMPLEMENTAÇÃO GPU ====================
+\section{Implementação GPU}
+
+\begin{frame}{Arquitetura da Solução}
+    \begin{center}
+    \begin{tikzpicture}[scale=0.8, every node/.style={scale=0.9}]
+        % CPU
+        \node[draw, rectangle, fill=blue!20, minimum width=4cm, minimum height=1.5cm] at (0,0) {CPU (Host)};
+        \node at (0,-0.3) {\small Construção do Autômato};
+        
+        % Seta
+        \draw[->, very thick] (2.5,0) -- (4,0) node[midway, above] {PCIe};
+        
+        % GPU
+        \node[draw, rectangle, fill=green!20, minimum width=5cm, minimum height=3cm] at (7,0) {};
+        \node at (7,1) {\textbf{GPU (Device)}};
+        
+        % Kernels dentro da GPU
+        \node[draw, rectangle, fill=orange!20, minimum width=2cm] at (6,-0.3) {\small Kernel Global};
+        \node[draw, rectangle, fill=red!20, minimum width=2cm] at (8.2,-0.3) {\small Kernel Shared};
+        
+        % Memórias
+        \node[draw, rectangle, fill=gray!20] at (7,-1.2) {\small Global Memory (STT)};
+    \end{tikzpicture}
+    \end{center}
+    
+    \vspace{0.3cm}
+    \textbf{Dois kernels implementados:}
+    \begin{enumerate}
+        \item \textbf{GPU Global}: STT compactada em memória global
+        \item \textbf{GPU Shared Híbrido}: Cache de est0/failure/output em shared memory
+    \end{enumerate}
+\end{frame}
+
+\begin{frame}{Condições de Corrida}
+    \textbf{Problema:} Múltiplas threads podem encontrar o mesmo padrão simultaneamente
+    
+    \vspace{0.3cm}
+    \begin{columns}
+        \column{0.5\textwidth}
+        \textbf{Pontos de Condição de Corrida:}
+        \begin{enumerate}
+            \item \textbf{Contagem de matches}: Threads incrementando contador global
+            \item \textbf{Bordas de segmentos}: Padrões que cruzam limites entre threads
+            \item \textbf{Acesso à STT}: Leitura concorrente (não é problema - read-only)
+        \end{enumerate}
+        
+        \column{0.5\textwidth}
+        \textbf{Exemplo de Race Condition:}
+        \begin{center}
+        \begin{tikzpicture}[scale=0.6]
+            \node[draw, rectangle, fill=blue!20] at (0,2) {Thread 0};
+            \node[draw, rectangle, fill=green!20] at (3,2) {Thread 1};
+            \node[draw, rectangle, fill=gray!20] at (1.5,0) {matches++};
+            \draw[->, thick] (0,1.7) -- (1.2,0.3);
+            \draw[->, thick] (3,1.7) -- (1.8,0.3);
+            \node[red] at (1.5,-0.7) {\small Conflito!};
+        \end{tikzpicture}
+        \end{center}
+    \end{columns}
+\end{frame}
+
+\begin{frame}{Tratamento das Condições de Corrida}
+    \textbf{Solução 1: Acumulação Local + atomicAdd}
+    \begin{itemize}
+        \item Cada thread mantém contador LOCAL de matches
+        \item Apenas no final: \texttt{atomicAdd(\&total\_matches, local\_count)}
+        \item Reduz contenção de 1 atomic/match para 1 atomic/thread
+    \end{itemize}
+    
+    \vspace{0.3cm}
+    \textbf{Solução 2: Técnica de Overlap}
+    \begin{itemize}
+        \item Cada thread processa 64 caracteres EXTRAS antes do seu segmento
+        \item Só conta matches DENTRO do seu segmento real
+        \item Evita duplicação e perda de matches nas bordas
+    \end{itemize}
+    
+    \vspace{0.3cm}
+    \textbf{Solução 3: STT Read-Only}
+    \begin{itemize}
+        \item Autômato construído na CPU, copiado para GPU
+        \item GPU apenas lê a STT (sem escrita = sem race condition)
+        \item Pode usar \texttt{\_\_ldg()} para cache otimizado
+    \end{itemize}
+\end{frame}
+
+\begin{frame}{Kernel de Memória Global}
+    \textbf{Características:}
+    \begin{itemize}
+        \item Block size: 128 threads
+        \item Grid size: 512 blocos
+        \item STT completa em memória global
+        \item Aproveita cache L2 da GPU (32 MB na RTX 4060 Ti)
+    \end{itemize}
+    
+    \vspace{0.5cm}
+    \textbf{Divisão do trabalho:}
+    \begin{itemize}
+        \item Cada thread processa um segmento do texto
+        \item Overlap de 64 caracteres entre segmentos (para padrões nas bordas)
+        \item Acumulação local + atomicAdd no final
+    \end{itemize}
+\end{frame}
+
+\begin{frame}{Kernel Híbrido de Shared Memory}
+    \textbf{Problema}: Autômato com 2830 estados não cabe na shared memory (48 KB)
+    
+    \vspace{0.3cm}
+    \textbf{Solução}: Abordagem híbrida
+    
+    \begin{columns}
+        \column{0.5\textwidth}
+        \textbf{Em Shared Memory (9 KB):}
+        \begin{itemize}
+            \item \texttt{est0[256]}: Lookup estado 0
+            \item \texttt{failure\_cache[1024]}
+            \item \texttt{output\_cache[1024]}
+        \end{itemize}
+        
+        \column{0.5\textwidth}
+        \textbf{Em Global Memory:}
+        \begin{itemize}
+            \item VI, NE, VE, VS
+            \item Failure completo
+            \item Output completo
+        \end{itemize}
+    \end{columns}
+    
+    \vspace{0.5cm}
+    \textbf{Configuração:}
+    \begin{itemize}
+        \item Block size: 1024 threads (melhor ocupância)
+        \item Estado 0 é ~50\% dos acessos $\rightarrow$ est0 em shared acelera muito
+    \end{itemize}
+\end{frame}
+
+\begin{frame}{Técnica de Overlap}
+    \textbf{Problema}: Padrões que cruzam bordas entre segmentos
+    
+    \begin{center}
+    \begin{tikzpicture}[scale=0.7]
+        % Texto
+        \draw[fill=blue!20] (0,0) rectangle (6,1);
+        \draw[fill=green!20] (6,0) rectangle (12,1);
+        \node at (3,0.5) {Segmento Thread 0};
+        \node at (9,0.5) {Segmento Thread 1};
+        
+        % Padrão cruzando
+        \draw[fill=red!40] (4.5,-0.5) rectangle (7.5,-1.5);
+        \node at (6,-1) {\small "pattern"};
+        
+        % Overlap
+        \draw[<->, thick, orange] (5.5,1.2) -- (6.5,1.2);
+        \node[orange] at (6,1.6) {\small Overlap 64 chars};
+    \end{tikzpicture}
+    \end{center}
+    
+    \vspace{0.3cm}
+    \textbf{Solução implementada:}
+    \begin{itemize}
+        \item Cada thread começa a processar 64 caracteres antes do seu segmento
+        \item Só conta matches dentro do seu segmento real
+        \item Garante que nenhum padrão seja perdido nas bordas
+    \end{itemize}
+\end{frame}
+
+% ==================== SEÇÃO 4: RESULTADOS ====================
+\section{Resultados Experimentais}
+
+\begin{frame}{Ambiente de Testes}
+    \begin{columns}
+        \column{0.5\textwidth}
+        \textbf{CPU:}
+        \begin{itemize}
+            \item AMD Ryzen 5 5500
+            \item 6 cores / 12 threads
+            \item Arquitetura Zen 3
+        \end{itemize}
+        
+        \vspace{0.3cm}
+        \textbf{Memória:}
+        \begin{itemize}
+            \item 32 GB DDR4
+            \item Disco: SSD M.2 1 TB (65.1 GB livres)
+        \end{itemize}
+        
+        \column{0.5\textwidth}
+        \textbf{GPU:}
+        \begin{itemize}
+            \item NVIDIA GeForce RTX 4060 Ti
+            \item 34 SMs, 4352 CUDA Cores
+            \item 8 GB GDDR6
+            \item 48 KB Shared Memory/bloco
+            \item 32 MB Cache L2
+            \item Driver: 581.80
+        \end{itemize}
+    \end{columns}
+    
+    \vspace{0.5cm}
+    \textbf{Software:} CUDA 12.x, GCC, Linux (WSL2)
+\end{frame}
+
+\begin{frame}{Dataset e Metodologia}
+    \begin{columns}
+        \column{0.5\textwidth}
+        \textbf{Dataset:}
+        \begin{itemize}
+            \item 495 padrões tipo Snort IDS
+            \item Categorias:
+            \begin{itemize}
+                \item SQL Injection (63)
+                \item XSS (59)
+                \item Buffer Overflow (52)
+                \item Command Injection (47)
+                \item Path Traversal (43)
+                \item Protocol Attacks (40)
+            \end{itemize}
+            \item Autômato: 2830 estados
+        \end{itemize}
+        
+        \column{0.5\textwidth}
+        \textbf{Instâncias de Teste:}
+        \begin{itemize}
+            \item 1 KB, 10 KB, 100 KB
+            \item 1 MB, 10 MB
+            \item 50 MB, 100 MB
+            \item 500 MB, 1 GB
+        \end{itemize}
+        
+        \vspace{0.3cm}
+        \textbf{Metodologia:}
+        \begin{itemize}
+            \item 5 iterações por experimento
+            \item Média dos tempos de kernel
+            \item Validação: matches GPU = CPU
+        \end{itemize}
+    \end{columns}
+\end{frame}
+
+\begin{frame}{Resultados: Textos Pequenos (menor ou igual a 10 MB)}
+    \begin{center}
+    \begin{tabular}{lrrrr}
+        \toprule
+        Tamanho & Serial & GPU Global & GPU Shared & Melhor \\
+        \midrule
+        1 KB & 0.01 ms & 0.15 ms & 0.14 ms & Serial \\
+        100 KB & 0.80 ms & 0.22 ms (4x) & 0.50 ms (2x) & Global \\
+        1 MB & 8.01 ms & 0.37 ms (22x) & 2.76 ms (3x) & Global \\
+        10 MB & 81 ms & 1.46 ms (56x) & 4.08 ms (20x) & Global \\
+        \bottomrule
+    \end{tabular}
+    \end{center}
+    
+    \vspace{0.5cm}
+    \textbf{Análise:}
+    \begin{itemize}
+        \item GPU Global vence para textos pequenos
+        \item Cache L2 de 32 MB mascara latência da memória global
+        \item Overhead do cache híbrido não compensa
+    \end{itemize}
+\end{frame}
+
+\begin{frame}{Resultados: Textos Grandes (maior ou igual a 50 MB)}
+    \begin{center}
+    \begin{tabular}{lrrrc}
+        \toprule
+        Tamanho & GPU Global & GPU Shared & Ganho Shared & Speedup vs CPU \\
+        \midrule
+        50 MB & 6.87 ms & 8.51 ms & -24\% & 59x \\
+        100 MB & 18.65 ms & 14.96 ms & \textcolor{green}{\textbf{+20\%}} & 55x \\
+        500 MB & 83.59 ms & 62.49 ms & \textcolor{green}{\textbf{+25\%}} & 66x \\
+        1 GB & ~150 ms & ~120 ms & \textcolor{green}{\textbf{+25\%}} & ~71x \\
+        \bottomrule
+    \end{tabular}
+    \end{center}
+    
+    \vspace{0.5cm}
+    \textbf{Análise:}
+    \begin{itemize}
+        \item Shared Memory vence para textos maiores que 100 MB
+        \item Ganho de até 25\% no tempo de kernel
+        \item Speedup máximo: 66x vs CPU serial
+    \end{itemize}
+\end{frame}
+
+\begin{frame}{Throughput Comparativo}
+    \begin{center}
+    \begin{tikzpicture}
+        \begin{axis}[
+            ybar,
+            width=12cm,
+            height=6cm,
+            ylabel={Throughput (Mcps)},
+            xlabel={Tamanho do Texto},
+            symbolic x coords={1MB, 10MB, 50MB, 100MB, 500MB},
+            xtick=data,
+            ymin=0,
+            ymax=10000,
+            legend style={at={(0.5,-0.2)}, anchor=north, legend columns=3},
+            bar width=12pt,
+            nodes near coords,
+            every node near coord/.append style={font=\tiny},
+        ]
+        
+        \addplot[fill=blue!50] coordinates {
+            (1MB, 131) (10MB, 129) (50MB, 129) (100MB, 128) (500MB, 127)
+        };
+        
+        \addplot[fill=green!50] coordinates {
+            (1MB, 2911) (10MB, 7781) (50MB, 7799) (100MB, 5882) (500MB, 7390)
+        };
+        
+        \addplot[fill=red!50] coordinates {
+            (1MB, 422) (10MB, 2739) (50MB, 6340) (100MB, 7030) (500MB, 8392)
+        };
+        
+        \legend{Serial CPU, GPU Global, GPU Shared}
+        
+        \end{axis}
+    \end{tikzpicture}
+    \end{center}
+    
+    \textbf{Throughput máximo:} 8.4 Gcps (GPU Shared, 500 MB)
+\end{frame}
+
+\begin{frame}{Crossover Point}
+    \begin{center}
+    \begin{tikzpicture}
+        \begin{axis}[
+            width=11cm,
+            height=6cm,
+            xlabel={Tamanho do Texto (MB)},
+            ylabel={Tempo de Kernel (ms)},
+            xmode=log,
+            ymode=log,
+            legend style={at={(0.02,0.98)}, anchor=north west},
+            grid=major,
+        ]
+        
+        \addplot[thick, blue, mark=square] coordinates {
+            (1, 0.37) (10, 1.46) (50, 6.87) (100, 18.65) (500, 83.59)
+        };
+        
+        \addplot[thick, red, mark=triangle] coordinates {
+            (1, 2.76) (10, 4.08) (50, 8.51) (100, 14.96) (500, 62.49)
+        };
+        
+        % Linha de crossover
+        \draw[dashed, gray, thick] (axis cs:80,0.1) -- (axis cs:80,100);
+        \node at (axis cs:80,50) [right] {\small Crossover ~100 MB};
+        
+        \legend{GPU Global, GPU Shared}
+        
+        \end{axis}
+    \end{tikzpicture}
+    \end{center}
+    
+    \textbf{Crossover point:} ~100 MB (acima disso, Shared Memory é melhor)
+\end{frame}
+
+% ==================== SEÇÃO 5: CONCLUSÕES ====================
+\section{Conclusões}
+
+\begin{frame}{Principais Contribuições}
+    \begin{enumerate}
+        \item \textbf{Compactação eficiente da STT}
+        \begin{itemize}
+            \item Redução de 98.7\% no uso de memória
+            \item 2830 KB $\rightarrow$ 36 KB
+        \end{itemize}
+        
+        \vspace{0.3cm}
+        \item \textbf{Kernel híbrido para autômatos grandes}
+        \begin{itemize}
+            \item Suporta qualquer número de estados
+            \item Cache inteligente em shared memory
+        \end{itemize}
+        
+        \vspace{0.3cm}
+        \item \textbf{Speedup significativo}
+        \begin{itemize}
+            \item Até 66x vs CPU serial
+            \item 25\% mais rápido que memória global para textos grandes
+        \end{itemize}
+        
+        \vspace{0.3cm}
+        \item \textbf{Técnica de overlap}
+        \begin{itemize}
+            \item Garante correção nos limites entre segmentos
+            \item 100\% de precisão nos matches
+        \end{itemize}
+    \end{enumerate}
+\end{frame}
+
+\begin{frame}{Trabalhos Futuros}
+    \begin{itemize}
+        \item \textbf{Texture Memory}: Usar texture cache para acessos à STT
+        
+        \vspace{0.3cm}
+        \item \textbf{Constant Memory}: Armazenar est0 em constant memory (broadcast)
+        
+        \vspace{0.3cm}
+        \item \textbf{Multi-GPU}: Distribuir texto entre múltiplas GPUs
+        
+        \vspace{0.3cm}
+        \item \textbf{Streams CUDA}: Overlap de transferência e computação
+        
+        \vspace{0.3cm}
+        \item \textbf{Integração com Snort}: Plug-in para uso em produção
+    \end{itemize}
+\end{frame}
+
+\begin{frame}{Resumo}
+    \begin{center}
+    \begin{tabular}{ll}
+        \toprule
+        \textbf{Métrica} & \textbf{Valor} \\
+        \midrule
+        Padrões Snort & 495 \\
+        Estados do Autômato & 2830 \\
+        Compressão STT & 98.7\% \\
+        Speedup Máximo & 66x \\
+        Throughput Máximo & 8.4 Gcps \\
+        Ganho Shared vs Global & +25\% (textos maiores que 100 MB) \\
+        \bottomrule
+    \end{tabular}
+    \end{center}
+    
+    \vspace{0.5cm}
+    \begin{center}
+    \textbf{A implementação demonstra que a compactação da STT combinada com\\uso inteligente de shared memory pode acelerar significativamente\\a detecção de intrusões baseada em Aho-Corasick.}
+    \end{center}
+\end{frame}
+
+\begin{frame}
+    \begin{center}
+    \Huge\textbf{Obrigado!}
+    
+    \vspace{1cm}
+    \Large Perguntas?
+    
+    \vspace{1cm}
+    \normalsize
+    Thiago Carvalho\\
+    TN741 - Computação de Alto Desempenho\\
+    UFRRJ - 2025
+    \end{center}
+\end{frame}
+
+\end{document}
